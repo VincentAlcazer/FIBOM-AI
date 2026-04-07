@@ -26,6 +26,7 @@ usethis::use_package("tidyr")
 usethis::use_package("rmarkdown")
 usethis::use_package("caret")
 usethis::use_package("xgboost")
+usethis::use_package("shinyalert")
 
 
 
@@ -61,7 +62,7 @@ usethis::use_test("app")
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("AIPAL")
+usethis::use_vignette("FIBOM-AI")
 devtools::build_vignettes()
 
 ## Code Coverage----
@@ -77,6 +78,11 @@ covrpage::covrpage()
 ##
 ## (You'll need GitHub there)
 usethis::use_github()
+usethis::use_git_remote(name = "origin", url = "https://github.com/VincentAlcazer/FIBOM-AI.git", overwrite = T)
+
+##vérifier les dépots git
+gert::git_remote_list()
+
 
 # GitHub Actions
 usethis::use_github_action()

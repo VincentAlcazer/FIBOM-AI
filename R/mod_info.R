@@ -18,7 +18,7 @@ mod_info_ui <- function(id){
              h2("Change log"),
 
              HTML("
-            01-12-2021: v0.1 - Data loading & Expression modules <br/>
+            17-10-2025: v0.1  <br/>
             ")
 
 

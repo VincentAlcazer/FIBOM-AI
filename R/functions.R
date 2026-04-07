@@ -1,57 +1,42 @@
 
-fast_pca <- function(data_acp, annot_vector, top_genes = 0.25, title = "",
-                     scale = T, center = T, legend = "Group",
-                     ellipse = "norm", gravity = T,
-                     lgd.pos = "right"){
+# --- Helper: numericInput + space just after---
+compact_num <- function(inputId, label, value = NA, step = NA, min = NA, max = NA, width = "100%", spacer = TRUE) {
+  div(class = "sb-item",
+    numericInput(
+      inputId = inputId,  label   = label,   value   = value,
+      min     = min,      max     = max,      step    = step,
+      width   = width
+    ),
+    # le spacer à l'intérieur du même conteneur
+    if (isTRUE(spacer)) div(class = "sb-spacer", style = "margin-top:-20px")  # style en CSS
+  )
+}
 
-  ##  2. Top 25% variables regions
-  if(is.null(top_genes)){
-    data_filtered = data_acp
-  } else {
-    vars <- apply(data_acp, 2, var)
-    top_var <- names(vars[order(vars, decreasing = T)][1:round(length(vars)*top_genes)])
-    data_filtered <- data_acp[,top_var]
+
+# --- Function to get prediction uncertainty
+get_empirical_uncertainty <- function(pred_value, lookup_table) {
+  row <- lookup_table %>%
+    filter(pred_value >= lower, pred_value < upper)
+
+  # Cas limite pred = 1
+  if (nrow(row) == 0 && pred_value == 1) {
+    row <- lookup_table %>%
+      filter(upper == max(upper))
   }
 
-
-  ##Run PCA
-  pca <- prcomp(data_filtered, scale=scale, center = center)
-
-  if(is.null(top_genes)){
-    pca_title = paste0("PCA - ", title," (all features)")
-  } else {
-    pca_title = paste0("PCA - ", title," (top ",top_genes*100,"% variable features)")
+  if (nrow(row) == 0) {
+    return(NULL)
   }
 
-  ##### ===== Individuals
-  factoextra::fviz_pca_ind(pca,
-                           title = pca_title,
-                           legend.title = legend,
-                           mean.point = gravity, #pt du centre de gravitĂ©
-                           addEllipses = TRUE,
-                           ellipse.type = ellipse,
-                           ellipse.level = 0.95,
-                           pointsize = 3,
-                           pointshape = 21,
-                           col.ind = "black",
-                           fill.ind = annot_vector, # Colorer par groupes
-                           repel = T,
-                           geom.ind=c("point")
-  ) +
-    # scale_shape_manual(values=c(15,15,15,16,16)) +
-    # scale_color_manual(values=c("#06A4FF","#00BFC4", "#53B400","#E38900", "#F8766D")) +
-    # scale_fill_manual(values=c("#06A4FF","#00BFC4", "#53B400","#E38900", "#F8766D")) +
-    theme_bw() +
-    theme(
-      plot.title = element_text(size=18, face="bold"),
-      axis.text = element_text(size=14, color="black"),
-      axis.title = element_text(size=16,face="bold"),
-      legend.title = element_text(size=16,face="bold"),
-      legend.text = element_text(size = 14),
-      legend.position = lgd.pos)
-
-
-
-
-
+  tibble(
+    pred = pred_value,
+    empirical_q025 = row$empirical_q025[[1]],
+    empirical_q500 = row$empirical_q500[[1]],
+    empirical_q975 = row$empirical_q975[[1]],
+    empirical_iqr_low = row$empirical_iqr_low[[1]],
+    empirical_iqr_high = row$empirical_iqr_high[[1]],
+    n_bin = row$n_bin[[1]],
+    pred_bin = as.character(row$pred_bin[[1]]),
+    pred_sd_bin = row$pred_sd_bin[[1]]
+  )
 }

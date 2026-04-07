@@ -19,13 +19,13 @@
 ## to change the name in the app_sys() function in app_config.R /!\
 ##
 golem::fill_desc(
-  pkg_name = "AIPAL", # The Name of the package containing the App
-  pkg_title = "Artificial Intelligence-based Prediction of Acute Leukemia type", # The Title of the package containing the App
-  pkg_description = "Prediction of Acute leukemia types (promyelocytic (APL), non-APL myeloblastic (AML) or lymphoblastic (ALL).", # The Description of the package containing the App
+  pkg_name = "FIBOMAI", # The Name of the package containing the App
+  pkg_title = "FIBOM-AI", # The Title of the package containing the App
+  pkg_description = "Artificial Intelligence–based evaluation of BOne Marrow FIBrosis", # The Description of the package containing the App
   author_first_name = "Vincent", # Your First Name
   author_last_name = "Alcazer", # Your Last Name
   author_email = "vincent.alcazer@chu-lyon.fr", # Your Email
-  repo_url = "https://github.com/VincentAlcazer/AIPAL" # The URL of the GitHub Repo (optional)
+  repo_url = "https://github.com/VincentAlcazer/FIBOM-AI" # The URL of the GitHub Repo (optional)
 )
 
 ## Set {golem} options ----

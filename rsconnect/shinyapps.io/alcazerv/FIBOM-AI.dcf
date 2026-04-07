@@ -1,0 +1,14 @@
+name: FIBOM-AI
+title: FIBOM-AI
+username:
+account: alcazerv
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15848246
+bundleId: 11720158
+url: https://alcazerv.shinyapps.io/FIBOM-AI/
+when: 1773732992.21294
+lastSyncTime: 1773732992.21295
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/251023_pred_all.tsv|README.md|README.Rmd|tests/testthat/test-golem_utils_server.R|tests/testthat/test-golem_utils_ui.R|tests/testthat.R|vignettes/FIBOM-AI.Rmd

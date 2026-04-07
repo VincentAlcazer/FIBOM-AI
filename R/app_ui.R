@@ -13,7 +13,7 @@ app_ui <- function(request) {
     dashboardPage(
 
       header = dashboardHeader(
-        title = "AI-PAL v1.1",
+        title = "FIBOM-AI v1.1",
         tags$li(
           class = "dropdown",
           shinyWidgets::dropMenu(
@@ -24,16 +24,9 @@ app_ui <- function(request) {
             ),
             h3(strong("Reference")),
             br(),
-            h4(strong("Evaluation of a machine-learning model based on laboratory parameters for
-                  the prediction of acute leukaemia subtypes: a multicentre model development and validation study in France")),
+            h4(strong("FIBOM-AI: A machine learning model to predict bone marrow fibrosis")),
             br(),
-            p("Vincent Alcazer, Grégoire Le Meur, Marie Roccon, Sabrina Barriere, Baptiste Le Calvez, Bouchra Badaoui, Agathe Spaeth, Olivier Kosmider, Nicolas Freynet, Marion Eveillard5, Carolyne Croizier, Simon Chevalier, Pierre Sujobert"),
-            br(),
-            p(HTML('Lancet Digit Health. 2024 May;6(5):e323-e333.
-        PMID: 38670741
-        DOI: <a href="https://doi.org/10.1016/S2589-7500(24)00044-X" target="_blank">10.1016/S2589-7500(24)00044-X</a>,
-        <a href="https://www.thelancet.com/journals/landig/article/PIIS2589-7500(24)00044-X/fulltext" target="_blank">Read the full text</a>')
-          ),
+            p("This work is currently not published"),
              placement = "bottom",
             arrow = TRUE
           )
@@ -42,128 +35,94 @@ app_ui <- function(request) {
 
       #################### ==================== SIDEBAR ====================  ####################
 
-      sidebar = dashboardSidebar(
-        # sidebarMenu(
-        #   id = "tabs",
-        #   menuItem("Prediction", tabName = "prediction", icon = icon("play-circle")),
-        #   menuItem("Info/Help", tabName = "info", icon = icon("info")),
+      sidebar <- shinydashboard::dashboardSidebar(
+        # CSS & JS externes
+        tags$head(
+          tags$link(rel = "stylesheet", type = "text/css", href = "www/sidebar.css"),
+          tags$script(src = "www/sidebar.js")
+        ),
 
-          column(12,
-                 actionButton("run",
-                              tags$span(style = "font-weight: bold;",
-                                        "Predict leukemia type"))),
-          column(12,
+        # ----- Contenu -----
+        div(class = "sidebar",
 
-                 h2("Variables", align = "center"),
-                 div(style = "margin-top: -20px"),
-                 splitLayout(cellWidths = sidebar_split,
-                             numericInput("age",
-                                          label = ("Age (years)"),
-                                          value = 55),
-                             div(style = checkbox_align,
-                                 checkboxInput("age_na", label = "NA", value = F))
-                             ),
-                div(style = "margin-top: -20px"),
+            # Bouton (plein largeur)
+            div(class = "sb-grid-1",
+                div(style = "margin-top:20px"),
+                actionButton(
+                  "run",
+                  tagList(icon("play-circle"), span("Predict Fibrosis")),
+                  class = "btn-primary"
+                )
+            ),
 
-                h3("Blood", align = "center"),
-                div(style = "margin-top: -20px"),
-                splitLayout(cellWidths = sidebar_split,
-                            numericInput("MCV",
-                                         label = ("MCV (fL)"),
-                                         value = 90.2),
-                            div(style = checkbox_align,
-                                checkboxInput("MCV_na", label = "NA", value = F))
-                            ),
-                div(style = "margin-top: -20px"),
-                splitLayout(cellWidths = sidebar_split,
-                            numericInput("MCHC",
-                                         label = "MCHC (g/L)",
-                                         value = 330),
-                            div(style = checkbox_align,
-                                checkboxInput("MCHC_na", label = "NA", value = F)),
-                ),
-                div(style = "margin-top: -20px"),
-                splitLayout(cellWidths = sidebar_split,
-                            numericInput("platelets",
-                                         label = ("Platelets (G/L)"),
-                                         value = 50),
-                            div(style = checkbox_align,
-                                checkboxInput("platelets_na", label = "NA", value = F)),
-                ),
-                div(style = "margin-top: -20px"),
-                splitLayout(cellWidths = sidebar_split,
-                            numericInput("WBC",
-                                         label = ("WBC (G/L)"),
-                                         value = 10),
-                            div(style = checkbox_align,
-                                checkboxInput("WBC_na", label = "NA", value = F)),
-                ),
-                # div(style = "margin-top: -20px"),
-                # splitLayout(cellWidths = sidebar_split,
-                #             numericInput("ANC",
-                #                          label = ("ANC (G/L)"),
-                #                          value = 5),
-                #             div(style = checkbox_align,
-                #                 checkboxInput("ANC_na", label = "NA", value = F)),
-                # ),
+            # Titre
+            h2("Variables", align = "center"),
 
-                div(style = "margin-top: -20px"),
-                splitLayout(cellWidths = sidebar_split,
-                            numericInput("ALC",
-                                         label = ("ALC (G/L)"),
-                                         value = 1),
-                            div(style = checkbox_align,
-                                checkboxInput("ALC_na", label = "NA", value = F)),
-                ),
+            # Âge (1 colonne)
+            div(style = "margin-top:-20px"),
+            div(class = "sb-grid-1",
+                compact_num("age", "Age", value = 40, step = 1, min = 10, max = 100),
+                uiOutput("age_alert")
+            ),
 
-                div(style = "margin-top: -20px"),
-                splitLayout(cellWidths = sidebar_split,
-                            numericInput("mono",
-                                         label = ("Monocytes (G/L)"),
-                                         value = 6),
-                            div(style = checkbox_align,
-                                checkboxInput("mono_na", label = "NA", value = F)),
-                ),
+            # ---- Lignée rouge ----
+            div(style = "margin-top:40px"),
+            div(class = "param-section-title", "Red cells"),
+            div(style = "margin-top:-10px"),
+            div(class = "sb-grid-2",
+                compact_num("hemoglobin",  "Hemoglobin (g/L)",     value = 156, step = 0.1),
+                compact_num("hematocrite", "Hematocrit (%)",     value = 49.0, step = 0.1),
+                compact_num("hematies", "RBC (T/L)",     value = 5.9, step = 0.1),
+                compact_num("MCV",         "MCV (fL)",            value = 82.7, step = 0.1),
+                compact_num("MCH",         "MCH (TCMH)",     value = 26.4, step = 0.1),
+                compact_num("MCHC",        "MCHC (CCMH)",    value = 320, step = 0.1),
+                compact_num("IDR",         "RDW (IDR)",      value = 15.4, step = 0.1)
+            ),
 
+            # ---- Plaquettes ----
+            div(style = "margin-top:40px"),
+            div(class = "param-section-title", "Platelets"),
+            div(style = "margin-top:-10px"),
+            div(class = "sb-grid-2",
+                compact_num("platelets", "Platelets", value = 244, step = 1),
+                compact_num("mpv",       "MPV",       value = 10.6, step = 0.1)
+            ),
 
-          h3("Coag", align = "center"),
-          div(style = "margin-top: -20px"),
-          splitLayout(cellWidths = sidebar_split,
-                      numericInput("PT",
-                                   label = ("PT (%)"),
-                                   value = 6),
-                      div(style = checkbox_align,
-                          checkboxInput("PT_na", label = "NA", value = F)),
-          ),
-          div(style = "margin-top: -20px"),
-          splitLayout(cellWidths = sidebar_split,
-                      numericInput("fibri",
-                                   label = ("Fibrinogen (g/L)"),
-                                   value = 6),
-                      div(style = checkbox_align,
-                          checkboxInput("fibri_na", label = "NA", value = F)),
-          ),
+            # ---- Lignée blanche (2 par ligne) ----
+            div(style = "margin-top:40px"),
+            div(class = "param-section-title", "White cells (all in G/L)"),
+            div(style = "margin-top:-10px"),
+            div(class = "sb-grid-2",
+                compact_num("WBC",    "WBC",         value = 5.84, step = 0.1),
+                compact_num("ANC",    "ANC",         value = 3.99, step = 0.1),
+                compact_num("ALC",    "ALC",         value = 1.10, step = 0.1),
+                compact_num("mono",   "Monocytes",   value = 0.54, step = 0.1),
+                compact_num("eosino", "Eosinophils", value = 0.16, step = 0.1),
+                compact_num("baso",   "Basophils",   value = 0.06, step = 0.01)
+            ),
 
+            # ---- Cellules immatures ----
+            div(style = "margin-top:40px"),
+            div(class = "param-section-title", "Immature cells (all in %)"),
+            div(style = "margin-top:-10px"),
+            div(class = "sb-grid-2",
+                compact_num("erythroblasts", "Erythroblasts", value = 0, step = 0.1),
+                compact_num("myelemia",      "Myelemia",      value = 0.3, step = 0.1),
+                compact_num("myeloblasts",   "Myeloblasts",   value = 0, step = 0.1),
+                div()  # équilibrage (case vide)
+            ),
 
-          h3("Bioch", align = "center"),
-          # div(style = "margin-top: -20px"),
-          # numericInput("phospho",
-          #              label = ("phosphorus (mmol/L)"),
-          #              value = 1.47),
-          div(style = "margin-top: -20px"),
-          splitLayout(cellWidths = sidebar_split,
-                      numericInput("LDH",
-                                   label = ("LDH (UI/L)"),
-                                   value = 250),
-                      div(style = checkbox_align,
-                          checkboxInput("LDH_na", label = "NA", value = F)),
-          )
+            ###script pour alertes
+            tags$script(HTML("
+  $(document).on('blur', 'input[type=\"number\"]', function() {
+    var inputId = this.id + '_blur';
+    var inputVal = this.value;
+    Shiny.setInputValue(inputId, inputVal, {priority: 'event'});
+  });
+"))
 
-
-          ) # column
-         # ) #dashboard sidebar
-      ), # sidebar
-
+        )
+      ), #sideboard dashbar
 
       #################### ==================== BODY ====================  ####################
 
@@ -206,7 +165,7 @@ golem_add_external_resources <- function() {
     favicon(),
     bundle_resources(
       path = app_sys("app/www"),
-      app_title = "AIPAL"
+      app_title = "FIBOMAI"
     )
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
