@@ -16,31 +16,13 @@ app_ui <- function(request) {
         title = "FIBOM-AI v1.1",
         tags$li(
           class = "dropdown",
-          shinyWidgets::dropMenu(
-            shinyWidgets::dropdownButton(
-              label = "Info",
-              status = "success",
-              icon = icon("info")
-            ),
-            h3(strong("Reference")),
-            br(),
-            h4(strong("FIBOM-AI: A machine learning model to predict bone marrow fibrosis")),
-            br(),
-            p("This work is currently not published"),
-             placement = "bottom",
-            arrow = TRUE
-          )
+          tags$a(href = "#", `data-fib-open` = "fib-info", icon("info-circle"), " Info")
         )
       ),
 
       #################### ==================== SIDEBAR ====================  ####################
 
-      sidebar <- shinydashboard::dashboardSidebar(
-        # CSS & JS externes
-        tags$head(
-          tags$link(rel = "stylesheet", type = "text/css", href = "www/sidebar.css"),
-          tags$script(src = "www/sidebar.js")
-        ),
+      sidebar = shinydashboard::dashboardSidebar(
 
         # ----- Contenu -----
         div(class = "sidebar",
@@ -61,8 +43,7 @@ app_ui <- function(request) {
             # Âge (1 colonne)
             div(style = "margin-top:-20px"),
             div(class = "sb-grid-1",
-                compact_num("age", "Age", value = 40, step = 1, min = 10, max = 100),
-                uiOutput("age_alert")
+                compact_num("age", "Age", value = 40, step = 1, min = 10, max = 100)
             ),
 
             # ---- Lignée rouge ----
@@ -112,14 +93,11 @@ app_ui <- function(request) {
                 div()  # équilibrage (case vide)
             ),
 
-            ###script pour alertes
-            tags$script(HTML("
-  $(document).on('blur', 'input[type=\"number\"]', function() {
-    var inputId = this.id + '_blur';
-    var inputVal = this.value;
-    Shiny.setInputValue(inputId, inputVal, {priority: 'event'});
-  });
-"))
+            # Training ranges for the client-side outlier warnings
+            tags$script(
+              type = "application/json", id = "fib-ranges",
+              HTML(jsonlite::toJSON(valid_ranges, auto_unbox = TRUE))
+            )
 
         )
       ), #sideboard dashbar
@@ -127,6 +105,10 @@ app_ui <- function(request) {
       #################### ==================== BODY ====================  ####################
 
       body = dashboardBody(
+
+        disclaimer_modal(),
+        info_modal(),
+        fib_modal("fib-warning", "Warning", div(class = "fib-warning-text"), type = "warning"),
 
         mod_prediction_ui("prediction_1")
        #  tabItems(
@@ -144,6 +126,31 @@ app_ui <- function(request) {
       ) #body
 
     ) #dashboard page
+  )
+}
+
+#' Disclaimer, shown as soon as the page is displayed
+#'
+#' @noRd
+disclaimer_modal <- function() {
+  fib_modal(
+    "fib-disclaimer", "Disclaimer", open = TRUE, button = "I Understand",
+    p("FIBOM-AI is provided for research use only and is not intended to replace clinical judgement or standard diagnosis work-up,
+      or bone marrow evaluation when clinically indicated."),
+    p("This tool estimates the probability of grade 2\u20133 bone marrow fibrosis but does not establish MPN subtype.
+      Model outputs must be interpreted within the full clinical, biological, and pathological context.
+      Any diagnostic or therapeutic decision made using this tool remains the sole responsibility of the treating physician.")
+  )
+}
+
+#' Reference information (header "Info" link)
+#'
+#' @noRd
+info_modal <- function() {
+  fib_modal(
+    "fib-info", "Reference", button = "Close",
+    h4(strong("FIBOM-AI: A machine learning model to predict bone marrow fibrosis")),
+    p("This work is currently not published")
   )
 }
 

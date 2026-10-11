@@ -33,9 +33,9 @@ mod_prediction_ui <- function(id){
              )),
              p(HTML(
                paste0(
-                 "<font color='#E88B1A'><i><b>Overall prediction</b></font> has an accuracy of 89% [range: 82–93.4%] ",
+                 "<font color='#E88B1A'><i><b>Overall prediction</b></font> has an accuracy of 89% [range: 82&ndash;93.4%] ",
                  "across all retrospective cohorts, ",
-                 "and 85.7% [range: 85–87%] in the prospective cohorts.</i>"
+                 "and 85.7% [range: 85&ndash;87%] in the prospective cohorts.</i>"
                )
              )),
 
@@ -78,11 +78,9 @@ mod_prediction_ui <- function(id){
 #' prediction Server Functions
 #'
 #' @noRd
-mod_prediction_server <- function(id, r){
+mod_prediction_server <- function(id, newdata){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-
-    newdata <- reactive({r$test$newdata})
 
     newdata_pc <- reactive({
 
@@ -97,7 +95,7 @@ mod_prediction_server <- function(id, r){
       req(newdata())
 
       pca_plot +
-          geom_point(aes(x = newdata_pc()[1], y = newdata_pc()[2], size = 10)) +
+          annotate("point", x = newdata_pc()[1], y = newdata_pc()[2], size = 4.5) +
           default_theme
       })
 
@@ -167,10 +165,10 @@ mod_prediction_server <- function(id, r){
         scale_fill_manual(values = cols, guide = "none") +
 
         # curseur fibrose
-        geom_errorbarh(aes(y = 0.8,
-                           xmin = pF - 1.96 * pF_uncertainty()$pred_sd_bin,
-                           xmax = pF + 1.96 * pF_uncertainty()$pred_sd_bin,),
-                       height = 0.02,linewidth = 1.5, color = "#263238") +
+        geom_errorbar(aes(y = 0.8,
+                          xmin = pF - 1.96 * pF_uncertainty()$pred_sd_bin,
+                          xmax = pF + 1.96 * pF_uncertainty()$pred_sd_bin),
+                      orientation = "y", width = 0.02, linewidth = 1.5, color = "#263238") +
         geom_point(aes(x = pF, y = 0.8), size = 5, color = "#263238") +
 
         # étiquettes de lignes
@@ -242,10 +240,11 @@ mod_prediction_server <- function(id, r){
     output$prediction_text <- renderText({
 
       req(fib_pred())
-      raw_pred <-   paste0(100*round(fib_pred()["Yes"],4),"%")
+      pF <- fib_pred()[["Yes"]]
+      raw_pred <-   paste0(100*round(pF,4),"%")
 
 
-      confident_pred <-   if(fib_pred()["Yes"] < as.numeric(params_df$sen_threshold) | fib_pred()["Yes"] > as.numeric(params_df$spe_threshold) ){
+      confident_pred <-   if(pF < as.numeric(params_df$sen_threshold) || pF > as.numeric(params_df$spe_threshold) ){
 
         paste0("<font color=\"#21bf88\">",
                paste0("Confident prediction"),
