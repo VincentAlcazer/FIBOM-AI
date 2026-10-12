@@ -34,7 +34,9 @@ app_ui <- function(request) {
                   "run",
                   tagList(icon("play-circle"), span("Predict Fibrosis")),
                   class = "btn-primary"
-                )
+                ),
+                tags$a(href = "#", id = "fib-example", class = "fib-example-link",
+                       "Load example values")
             ),
 
             # Titre
@@ -43,7 +45,7 @@ app_ui <- function(request) {
             # Âge (1 colonne)
             div(style = "margin-top:-20px"),
             div(class = "sb-grid-1",
-                compact_num("age", "Age", value = 40, step = 1, min = 10, max = 100)
+                compact_num("age", "Age", step = 1, min = 10, max = 100)
             ),
 
             # ---- Lignée rouge ----
@@ -51,13 +53,13 @@ app_ui <- function(request) {
             div(class = "param-section-title", "Red cells"),
             div(style = "margin-top:-10px"),
             div(class = "sb-grid-2",
-                compact_num("hemoglobin",  "Hemoglobin (g/L)",     value = 156, step = 0.1),
-                compact_num("hematocrite", "Hematocrit (%)",     value = 49.0, step = 0.1),
-                compact_num("hematies", "RBC (T/L)",     value = 5.9, step = 0.1),
-                compact_num("MCV",         "MCV (fL)",            value = 82.7, step = 0.1),
-                compact_num("MCH",         "MCH (TCMH)",     value = 26.4, step = 0.1),
-                compact_num("MCHC",        "MCHC (CCMH)",    value = 320, step = 0.1),
-                compact_num("IDR",         "RDW (IDR)",      value = 15.4, step = 0.1)
+                compact_num("hemoglobin",  "Hemoglobin (g/L)",     step = 0.1),
+                compact_num("hematocrite", "Hematocrit (%)",     step = 0.1),
+                compact_num("hematies", "RBC (T/L)",     step = 0.1),
+                compact_num("MCV",         "MCV (fL)",            step = 0.1),
+                compact_num("MCH",         "MCH (TCMH)",     step = 0.1),
+                compact_num("MCHC",        "MCHC (CCMH)",    step = 0.1),
+                compact_num("IDR",         "RDW (IDR)",      step = 0.1)
             ),
 
             # ---- Plaquettes ----
@@ -65,8 +67,8 @@ app_ui <- function(request) {
             div(class = "param-section-title", "Platelets"),
             div(style = "margin-top:-10px"),
             div(class = "sb-grid-2",
-                compact_num("platelets", "Platelets", value = 244, step = 1),
-                compact_num("mpv",       "MPV",       value = 10.6, step = 0.1)
+                compact_num("platelets", "Platelets", step = 1),
+                compact_num("mpv",       "MPV",       step = 0.1)
             ),
 
             # ---- Lignée blanche (2 par ligne) ----
@@ -74,12 +76,12 @@ app_ui <- function(request) {
             div(class = "param-section-title", "White cells (all in G/L)"),
             div(style = "margin-top:-10px"),
             div(class = "sb-grid-2",
-                compact_num("WBC",    "WBC",         value = 5.84, step = 0.1),
-                compact_num("ANC",    "ANC",         value = 3.99, step = 0.1),
-                compact_num("ALC",    "ALC",         value = 1.10, step = 0.1),
-                compact_num("mono",   "Monocytes",   value = 0.54, step = 0.1),
-                compact_num("eosino", "Eosinophils", value = 0.16, step = 0.1),
-                compact_num("baso",   "Basophils",   value = 0.06, step = 0.01)
+                compact_num("WBC",    "WBC",         step = 0.1),
+                compact_num("ANC",    "ANC",         step = 0.1),
+                compact_num("ALC",    "ALC",         step = 0.1),
+                compact_num("mono",   "Monocytes",   step = 0.1),
+                compact_num("eosino", "Eosinophils", step = 0.1),
+                compact_num("baso",   "Basophils",   step = 0.01)
             ),
 
             # ---- Cellules immatures ----
@@ -87,9 +89,9 @@ app_ui <- function(request) {
             div(class = "param-section-title", "Immature cells (all in %)"),
             div(style = "margin-top:-10px"),
             div(class = "sb-grid-2",
-                compact_num("erythroblasts", "Erythroblasts", value = 0, step = 0.1),
-                compact_num("myelemia",      "Myelemia",      value = 0.3, step = 0.1),
-                compact_num("myeloblasts",   "Myeloblasts",   value = 0, step = 0.1),
+                compact_num("erythroblasts", "Erythroblasts", step = 0.1),
+                compact_num("myelemia",      "Myelemia",      step = 0.1),
+                compact_num("myeloblasts",   "Myeloblasts",   step = 0.1),
                 div()  # équilibrage (case vide)
             ),
 
@@ -97,6 +99,11 @@ app_ui <- function(request) {
             tags$script(
               type = "application/json", id = "fib-ranges",
               HTML(jsonlite::toJSON(valid_ranges, auto_unbox = TRUE))
+            ),
+            # Values filled by the "Load example values" link
+            tags$script(
+              type = "application/json", id = "fib-example-values",
+              HTML(jsonlite::toJSON(example_values, auto_unbox = TRUE))
             )
 
         )
@@ -109,6 +116,7 @@ app_ui <- function(request) {
         disclaimer_modal(),
         info_modal(),
         fib_modal("fib-warning", "Warning", div(class = "fib-warning-text"), type = "warning"),
+        missing_modal(),
 
         mod_prediction_ui("prediction_1")
        #  tabItems(
@@ -151,6 +159,21 @@ info_modal <- function() {
     "fib-info", "Reference", button = "Close",
     h4(strong("FIBOM-AI: A machine learning model to predict bone marrow fibrosis")),
     p("This work is currently not published")
+  )
+}
+
+#' Confirmation shown when "Predict" is clicked with empty fields
+#'
+#' @noRd
+missing_modal <- function() {
+  fib_modal(
+    "fib-missing", "Missing values", type = "warning", button = "Go back",
+    extra_button = tags$button(type = "button", class = "btn btn-warning fib-run-anyway", "Predict anyway"),
+    p("The following values are missing:"),
+    tags$ul(class = "fib-missing-list"),
+    p("FIBOM-AI can still compute a prediction (missing values are handled by the model),
+      but it is less reliable: in the reference cohort, a missing RDW lowers the sensitivity from 87% to 70%."),
+    p(tags$i("For immature cells, enter 0 if none were seen."))
   )
 }
 

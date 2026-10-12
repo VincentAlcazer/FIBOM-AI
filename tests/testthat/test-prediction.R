@@ -29,7 +29,7 @@ test_that("the model returns a probability for the default UI values", {
       myeloblastes   = myeloblastes_percent * leucocytes / 100
     )
 
-  pred <- predict(fibrosis_model, newdata = newdata, type = "prob", na.action = "na.pass")
+  pred <- predict_fibrosis(newdata)
   expect_equal(pred[["Yes"]] + pred[["No"]], 1, tolerance = 1e-6)
   expect_equal(pred[["Yes"]], 0.1002, tolerance = 1e-3)
 })
@@ -52,4 +52,16 @@ test_that("the uncertainty interval always contains the prediction", {
     # No jump in width at bin boundaries
     expect_lt(max(abs(diff(iv[, "upper"] - iv[, "lower"]))), 0.01)
   }
+})
+
+test_that("the JSON booster reproduces the original model predictions", {
+  pred <- predict_fibrosis(data)
+  expect_equal(pred$Yes, pred_all$Yes, tolerance = 1e-6)
+})
+
+test_that("missing values still give a probability", {
+  nd <- data[1, model_features]
+  nd[1, ] <- NA_real_
+  p <- predict_fibrosis(nd)$Yes
+  expect_true(p > 0 && p < 1)
 })

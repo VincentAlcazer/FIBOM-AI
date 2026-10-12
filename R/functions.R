@@ -44,7 +44,7 @@ get_empirical_uncertainty <- function(pred_value, lookup_table) {
 
 # --- Lightweight modal (pure HTML/CSS, opened/closed by inst/app/www/fibomai.js)
 # Rendered with the page, so it does not depend on the server connection.
-fib_modal <- function(id, title, ..., open = FALSE, button = "OK", type = "info") {
+fib_modal <- function(id, title, ..., open = FALSE, button = "OK", type = "info", extra_button = NULL) {
   div(
     id = id,
     class = paste("fib-modal", paste0("fib-modal-", type), if (open) "fib-open"),
@@ -52,7 +52,9 @@ fib_modal <- function(id, title, ..., open = FALSE, button = "OK", type = "info"
     div(class = "fib-modal-box",
         h2(id = paste0(id, "-title"), class = "fib-modal-title", title),
         div(class = "fib-modal-body", ...),
-        tags$button(type = "button", class = "btn btn-primary fib-modal-close", button)
+        div(class = "fib-modal-buttons",
+            tags$button(type = "button", class = "btn btn-primary fib-modal-close", button),
+            extra_button)
     )
   )
 }
@@ -76,4 +78,27 @@ get_prediction_interval <- function(pred_value, lookup_table,
   d_high <- stats::approx(lk$pred_mean_bin, above, xout = pred_value, rule = 2)$y
 
   c(lower = max(0, pred_value - d_low), upper = min(1, pred_value + d_high))
+}
+
+
+# --- Probability of grade 2-3 fibrosis
+# binary:logistic booster trained with "Yes" as the positive class, so the raw
+# output is P(Yes). Missing values (NA) are handled natively by XGBoost.
+predict_fibrosis <- function(newdata, booster = get_booster()) {
+  x <- as.matrix(as.data.frame(newdata)[, model_features, drop = FALSE])
+  storage.mode(x) <- "double"
+  p <- predict(booster, xgb.DMatrix(x, missing = NA))
+  data.frame(Yes = p, No = 1 - p)
+}
+
+# --- Booster, loaded once per R session from the JSON bytes
+.model_cache <- new.env(parent = emptyenv())
+get_booster <- function() {
+  if (is.null(.model_cache$booster)) {
+    f <- tempfile(fileext = ".json")
+    on.exit(unlink(f))
+    writeBin(fibrosis_model_json, f)
+    .model_cache$booster <- xgb.load(f)
+  }
+  .model_cache$booster
 }

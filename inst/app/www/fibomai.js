@@ -90,6 +90,55 @@
     openModal('fib-warning');
   });
 
+  // ---- Missing values: confirm before predicting ----
+  var runAnyway = false;
+
+  // Capture phase: runs before Shiny's handler on the button and can stop it
+  document.addEventListener('click', function (e) {
+    var run = e.target.closest ? e.target.closest('#run') : null;
+    if (!run) return;
+    if (runAnyway) { runAnyway = false; return; }
+
+    var r = getRanges(), missing = [];
+    for (var id in r) {
+      var el = document.getElementById(id);
+      if (el && el.value === '') missing.push(r[id].label);
+    }
+    if (!missing.length) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var list = document.querySelector('#fib-missing .fib-missing-list');
+    if (list) {
+      list.innerHTML = missing.map(function (m) { return '<li>' + escapeHtml(m) + '</li>'; }).join('');
+    }
+    openModal('fib-missing');
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.classList.contains('fib-run-anyway')) return;
+    closeModal(e.target.closest('.fib-modal'));
+    runAnyway = true;
+    document.getElementById('run').click();
+  });
+
+  // ---- "Load example values" ----
+  document.addEventListener('click', function (e) {
+    if (e.target.id !== 'fib-example') return;
+    e.preventDefault();
+    var src = document.getElementById('fib-example-values');
+    var vals = {};
+    try { vals = JSON.parse(src.textContent); } catch (err) { return; }
+    for (var id in vals) {
+      var el = document.getElementById(id);
+      if (!el) continue;
+      el.value = vals[id];
+      el.classList.remove('fib-out-of-range');
+      delete lastWarned[id];
+      if (window.jQuery) jQuery(el).trigger('change');
+    }
+  });
+
   // ---- Unit placeholders (grey, disappear when typing) ----
   var ph = {
     age: 'years', hemoglobin: 'g/L', hematocrite: '%', hematies: 'T/L',

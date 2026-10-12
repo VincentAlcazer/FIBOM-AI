@@ -91,12 +91,22 @@ mod_prediction_server <- function(id, newdata){
 
     })
 
+    # Sidebar fields left empty (labels), for traceability of the result
+    missing_inputs <- reactive({
+      req(newdata())
+      empty <- is.na(unlist(newdata()[1, input_vars]))
+      unname(input_labels[names(input_vars)[empty]])
+    })
+
     output$density_plot <- renderPlot({
       req(newdata())
 
-      pca_plot +
-          annotate("point", x = newdata_pc()[1], y = newdata_pc()[2], size = 4.5) +
-          default_theme
+      p <- pca_plot + default_theme
+      if (anyNA(newdata_pc())) {
+        p + labs(subtitle = "Patient not shown: the PCA needs all values")
+      } else {
+        p + annotate("point", x = newdata_pc()[1], y = newdata_pc()[2], size = 4.5)
+      }
       })
 
 
@@ -105,7 +115,7 @@ mod_prediction_server <- function(id, newdata){
     fib_pred <- reactive({
       req(newdata())
 
-      prediction <- predict(fibrosis_model, newdata = newdata(), type = "prob", na.action = "na.pass")
+      prediction <- predict_fibrosis(newdata())
 
       return(prediction)
     })
@@ -266,6 +276,13 @@ mod_prediction_server <- function(id, newdata){
 
                    ),
       sep = "\n")
+
+      if (length(missing_inputs()) > 0) {
+        text <- paste0(text,
+                       "<font color=\"#E88B1A\"><b>&#9888; Computed with missing values:</b> ",
+                       htmltools::htmlEscape(paste(missing_inputs(), collapse = ", ")),
+                       ". The prediction is less reliable.</font><br><br>")
+      }
 
       return(text)
 

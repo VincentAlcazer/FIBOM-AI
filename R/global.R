@@ -6,8 +6,8 @@
 #' @import ggplot2
 #' @import dplyr
 #' @import tibble
-#' @importFrom caret predict.train
-#' @importFrom xgboost xgb.DMatrix
+#' @importFrom xgboost xgb.DMatrix xgb.load
+#' @importFrom stats predict
 
 
 ########## ========== Parameters
@@ -22,7 +22,24 @@
 
 data <- readRDS("data/251023_FIBOMAI_fibrosis_df.rds")
 
-fibrosis_model <- readRDS("data/251023_FIBOMAI_XGB_model.rds")
+## XGBoost booster exported to JSON from the original caret model
+## (data/251023_FIBOMAI_XGB_model.rds, xgboost 1.7.9.1): the JSON format can be
+## read by any xgboost version, whereas the .rds only loads with xgboost < 2.0.
+## Kept as bytes here (objects of this file are serialised when the package is
+## installed) and loaded on first use by get_booster().
+fibrosis_model_json <- readBin("data/251023_FIBOMAI_XGB_model.json", "raw",
+                               file.info("data/251023_FIBOMAI_XGB_model.json")$size)
+
+## Model predictors, in the order the booster expects them
+model_features <- c(
+  "BM_biopsy_age", "leucocytes", "hematies", "hemoglobine", "hematocrite",
+  "vgm", "tcmh", "ccmh", "idr_cv", "plaquettes", "vpm", "poly_neutrophiles_percent",
+  "poly_neutrophiles", "poly_eosinophiles_percent", "poly_eosinophiles",
+  "poly_basophiles_percent", "poly_basophiles", "lymphocytes_percent",
+  "lymphocytes", "monocytes_percent", "monocytes", "erythroblastes_percent",
+  "myelemie_percent", "myelemie", "erythroblastes", "myeloblastes_percent",
+  "myeloblastes"
+)
 
 pred_all <- readRDS("data/251023_pred_all.rds")
 
@@ -40,7 +57,7 @@ params_df <- data.frame(
 ### === Base PCA
 training_data <- data %>%
   # Subset variables from final model
-  select(Fibrosis = response, all_of(fibrosis_model$finalModel$xNames))
+  select(Fibrosis = response, all_of(model_features))
 
 ### === Training data pCA
 ## Get components
@@ -97,6 +114,15 @@ input_labels <- c(
   erythroblasts = "Erythroblasts (%)",
   myelemia      = "Myelemia (%)",
   myeloblasts   = "Myeloblasts (%)"
+)
+
+## Example patient for the "Load example values" link (the sidebar starts
+## empty so that no field is silently left at a default value)
+example_values <- list(
+  age = 40, hemoglobin = 156, hematocrite = 49, hematies = 5.9, MCV = 82.7,
+  MCH = 26.4, MCHC = 320, IDR = 15.4, platelets = 244, mpv = 10.6,
+  WBC = 5.84, ANC = 3.99, ALC = 1.10, mono = 0.54, eosino = 0.16, baso = 0.06,
+  erythroblasts = 0, myelemia = 0.3, myeloblasts = 0
 )
 
 ## Training ranges, checked client-side (see inst/app/www/fibomai.js)
