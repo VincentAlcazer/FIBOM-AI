@@ -33,9 +33,9 @@ mod_prediction_ui <- function(id){
              )),
              p(HTML(
                paste0(
-                 "<font color='#E88B1A'><i><b>Overall prediction</b></font> has an accuracy of 89% [range: 82–93.4%] ",
+                 "<font color='#E88B1A'><i><b>Overall prediction</b></font> has an accuracy of 89% [range: 82&ndash;93.4%] ",
                  "across all retrospective cohorts, ",
-                 "and 85.7% [range: 85–87%] in the prospective cohorts.</i>"
+                 "and 85.7% [range: 85&ndash;87%] in the prospective cohorts.</i>"
                )
              )),
 
@@ -78,11 +78,9 @@ mod_prediction_ui <- function(id){
 #' prediction Server Functions
 #'
 #' @noRd
-mod_prediction_server <- function(id, r){
+mod_prediction_server <- function(id, newdata){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-
-    newdata <- reactive({r$test$newdata})
 
     newdata_pc <- reactive({
 
@@ -93,12 +91,22 @@ mod_prediction_server <- function(id, r){
 
     })
 
+    # Sidebar fields left empty (labels), for traceability of the result
+    missing_inputs <- reactive({
+      req(newdata())
+      empty <- is.na(unlist(newdata()[1, input_vars]))
+      unname(input_labels[names(input_vars)[empty]])
+    })
+
     output$density_plot <- renderPlot({
       req(newdata())
 
-      pca_plot +
-          geom_point(aes(x = newdata_pc()[1], y = newdata_pc()[2], size = 10)) +
-          default_theme
+      p <- pca_plot + default_theme
+      if (anyNA(newdata_pc())) {
+        p + labs(subtitle = "Patient not shown: the PCA needs all values")
+      } else {
+        p + annotate("point", x = newdata_pc()[1], y = newdata_pc()[2], size = 4.5)
+      }
       })
 
 
@@ -107,7 +115,7 @@ mod_prediction_server <- function(id, r){
     fib_pred <- reactive({
       req(newdata())
 
-      prediction <- predict(fibrosis_model, newdata = newdata(), type = "prob", na.action = "na.pass")
+      prediction <- predict_fibrosis(newdata())
 
       return(prediction)
     })
@@ -125,7 +133,7 @@ mod_prediction_server <- function(id, r){
     # --- Uncertainty
     pF_uncertainty <- reactive({
 
-      get_empirical_uncertainty(fib_pred()[["Yes"]], lookup_table = uncertainty_lookup)
+      get_prediction_interval(fib_pred()[["Yes"]], lookup_table = uncertainty_lookup)
 
     })
 
@@ -167,17 +175,17 @@ mod_prediction_server <- function(id, r){
         scale_fill_manual(values = cols, guide = "none") +
 
         # curseur fibrose
-        geom_errorbarh(aes(y = 0.8,
-                           xmin = pF - 1.96 * pF_uncertainty()$pred_sd_bin,
-                           xmax = pF + 1.96 * pF_uncertainty()$pred_sd_bin,),
-                       height = 0.02,linewidth = 1.5, color = "#263238") +
+        geom_errorbar(aes(y = 0.8,
+                          xmin = pF_uncertainty()[["lower"]],
+                          xmax = pF_uncertainty()[["upper"]]),
+                      orientation = "y", width = 0.02, linewidth = 1.5, color = "#263238") +
         geom_point(aes(x = pF, y = 0.8), size = 5, color = "#263238") +
 
         # étiquettes de lignes
         annotate("text", x = 0.02, y = 1.05, label = "Grade 2-3 fibrosis probability (%):", fontface = "bold",
                  hjust = 0, size = 6, color = "#263238") +
         annotate("text", x = 0.02, y = 1.025,
-                 label = "Error bars represent the empirical uncertainty range derived from prediction variability in similar cases.",
+                 label = "Error bars represent the empirical 95% uncertainty range derived from prediction variability in similar cases.",
                  fontface = "italic", hjust = 0, size = 5, color = "black") +
         annotate("text", x = 0, y = 0.58, label = "g0-1 Fibrosis", fontface = "bold",
                  hjust = 0, size = 6, color = "#263238") +
@@ -186,7 +194,7 @@ mod_prediction_server <- function(id, r){
 
         # valeurs
         annotate("label",
-                 x = pF, y = 0.85,
+                 x = min(max(pF, 0.03), 0.97), y = 0.85,  # garde l'étiquette dans le cadre
                  label = sprintf("%.1f%%", 100*pF),
                  size = 5, label.size = 0, fill = "#eceff1", color = "#263238", fontface = "bold") +
         # graduations 0–50–100
@@ -242,10 +250,13 @@ mod_prediction_server <- function(id, r){
     output$prediction_text <- renderText({
 
       req(fib_pred())
-      raw_pred <-   paste0(100*round(fib_pred()["Yes"],4),"%")
+      pF <- fib_pred()[["Yes"]]
+      raw_pred <-   paste0(100*round(pF,4),"%")
 
 
-      confident_pred <-   if(fib_pred()["Yes"] < as.numeric(params_df$sen_threshold) | fib_pred()["Yes"] > as.numeric(params_df$spe_threshold) ){
+      # Never "confident" when values are missing: the confidence cutoffs were
+      # established on complete blood counts
+      confident_pred <-   if(is_confident(pF, n_missing = length(missing_inputs()))){
 
         paste0("<font color=\"#21bf88\">",
                paste0("Confident prediction"),
@@ -267,6 +278,13 @@ mod_prediction_server <- function(id, r){
 
                    ),
       sep = "\n")
+
+      if (length(missing_inputs()) > 0) {
+        text <- paste0(text,
+                       "<font color=\"#E88B1A\"><b>&#9888; Computed with missing values:</b> ",
+                       htmltools::htmlEscape(paste(missing_inputs(), collapse = ", ")),
+                       ". The prediction is less reliable and cannot be classified as confident.</font><br><br>")
+      }
 
       return(text)
 
