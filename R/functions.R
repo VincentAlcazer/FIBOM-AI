@@ -56,3 +56,24 @@ fib_modal <- function(id, title, ..., open = FALSE, button = "OK", type = "info"
     )
   )
 }
+
+
+# --- Function to get the uncertainty interval around a prediction
+# The lookup quantiles describe the spread of predictions among similar cases
+# (same prediction bin), but they are not centred on the patient: at the
+# extremes they are pulled towards 50%, so the patient's point could fall
+# outside its own interval. We therefore keep only the spread of each bin
+# (distance from its median to each quantile) and re-centre it on the
+# patient's prediction. The spread is interpolated between bin centres to
+# avoid jumps at bin boundaries.
+get_prediction_interval <- function(pred_value, lookup_table,
+                                    lower = "empirical_q025", upper = "empirical_q975") {
+  lk <- as.data.frame(lookup_table)
+  below <- lk$empirical_q500 - lk[[lower]]
+  above <- lk[[upper]] - lk$empirical_q500
+
+  d_low  <- stats::approx(lk$pred_mean_bin, below, xout = pred_value, rule = 2)$y
+  d_high <- stats::approx(lk$pred_mean_bin, above, xout = pred_value, rule = 2)$y
+
+  c(lower = max(0, pred_value - d_low), upper = min(1, pred_value + d_high))
+}

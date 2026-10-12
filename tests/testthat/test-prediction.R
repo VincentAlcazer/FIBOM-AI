@@ -41,3 +41,15 @@ test_that("get_empirical_uncertainty finds a bin over the whole [0, 1] range", {
     expect_true(is.finite(res$pred_sd_bin))
   }
 })
+
+test_that("the uncertainty interval always contains the prediction", {
+  grid <- seq(0, 1, by = 0.001)
+  for (level in list(c("empirical_q025", "empirical_q975"), c("empirical_iqr_low", "empirical_iqr_high"))) {
+    iv <- t(sapply(grid, get_prediction_interval, lookup_table = uncertainty_lookup,
+                   lower = level[1], upper = level[2]))
+    expect_true(all(iv[, "lower"] <= grid & grid <= iv[, "upper"]))
+    expect_true(all(iv >= 0 & iv <= 1))
+    # No jump in width at bin boundaries
+    expect_lt(max(abs(diff(iv[, "upper"] - iv[, "lower"]))), 0.01)
+  }
+})

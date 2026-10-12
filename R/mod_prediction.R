@@ -123,7 +123,7 @@ mod_prediction_server <- function(id, newdata){
     # --- Uncertainty
     pF_uncertainty <- reactive({
 
-      get_empirical_uncertainty(fib_pred()[["Yes"]], lookup_table = uncertainty_lookup)
+      get_prediction_interval(fib_pred()[["Yes"]], lookup_table = uncertainty_lookup)
 
     })
 
@@ -166,8 +166,8 @@ mod_prediction_server <- function(id, newdata){
 
         # curseur fibrose
         geom_errorbar(aes(y = 0.8,
-                          xmin = pF - 1.96 * pF_uncertainty()$pred_sd_bin,
-                          xmax = pF + 1.96 * pF_uncertainty()$pred_sd_bin),
+                          xmin = pF_uncertainty()[["lower"]],
+                          xmax = pF_uncertainty()[["upper"]]),
                       orientation = "y", width = 0.02, linewidth = 1.5, color = "#263238") +
         geom_point(aes(x = pF, y = 0.8), size = 5, color = "#263238") +
 
@@ -175,7 +175,7 @@ mod_prediction_server <- function(id, newdata){
         annotate("text", x = 0.02, y = 1.05, label = "Grade 2-3 fibrosis probability (%):", fontface = "bold",
                  hjust = 0, size = 6, color = "#263238") +
         annotate("text", x = 0.02, y = 1.025,
-                 label = "Error bars represent the empirical uncertainty range derived from prediction variability in similar cases.",
+                 label = "Error bars represent the empirical 95% uncertainty range derived from prediction variability in similar cases.",
                  fontface = "italic", hjust = 0, size = 5, color = "black") +
         annotate("text", x = 0, y = 0.58, label = "g0-1 Fibrosis", fontface = "bold",
                  hjust = 0, size = 6, color = "#263238") +
@@ -184,7 +184,7 @@ mod_prediction_server <- function(id, newdata){
 
         # valeurs
         annotate("label",
-                 x = pF, y = 0.85,
+                 x = min(max(pF, 0.03), 0.97), y = 0.85,  # garde l'étiquette dans le cadre
                  label = sprintf("%.1f%%", 100*pF),
                  size = 5, label.size = 0, fill = "#eceff1", color = "#263238", fontface = "bold") +
         # graduations 0–50–100
