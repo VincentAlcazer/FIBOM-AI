@@ -254,7 +254,9 @@ mod_prediction_server <- function(id, newdata){
       raw_pred <-   paste0(100*round(pF,4),"%")
 
 
-      confident_pred <-   if(pF < as.numeric(params_df$sen_threshold) || pF > as.numeric(params_df$spe_threshold) ){
+      # Never "confident" when values are missing: the confidence cutoffs were
+      # established on complete blood counts
+      confident_pred <-   if(is_confident(pF, n_missing = length(missing_inputs()))){
 
         paste0("<font color=\"#21bf88\">",
                paste0("Confident prediction"),
@@ -281,7 +283,7 @@ mod_prediction_server <- function(id, newdata){
         text <- paste0(text,
                        "<font color=\"#E88B1A\"><b>&#9888; Computed with missing values:</b> ",
                        htmltools::htmlEscape(paste(missing_inputs(), collapse = ", ")),
-                       ". The prediction is less reliable.</font><br><br>")
+                       ". The prediction is less reliable and cannot be classified as confident.</font><br><br>")
       }
 
       return(text)

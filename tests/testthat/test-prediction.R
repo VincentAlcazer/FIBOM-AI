@@ -65,3 +65,11 @@ test_that("missing values still give a probability", {
   p <- predict_fibrosis(nd)$Yes
   expect_true(p > 0 && p < 1)
 })
+
+test_that("a prediction with missing values is never confident", {
+  expect_true(is_confident(0.05))
+  expect_true(is_confident(0.95))
+  expect_false(is_confident(0.5))
+  expect_false(is_confident(0.05, n_missing = 1))
+  expect_false(is_confident(0.95, n_missing = 3))
+})

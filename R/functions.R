@@ -102,3 +102,10 @@ get_booster <- function() {
   }
   .model_cache$booster
 }
+
+# --- Confident zone: p below the sensitivity cutoff or above the specificity
+# cutoff, and only for complete inputs (the cutoffs were set on complete CBCs)
+is_confident <- function(p, n_missing = 0) {
+  n_missing == 0 &&
+    (p < as.numeric(params_df$sen_threshold) || p > as.numeric(params_df$spe_threshold))
+}
