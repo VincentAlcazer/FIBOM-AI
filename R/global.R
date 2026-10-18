@@ -125,6 +125,10 @@ example_values <- list(
   erythroblasts = 0, myelemia = 0.3, myeloblasts = 0
 )
 
+## Sidebar inputs the model never splits on (zero gain): leaving them empty
+## does not change the prediction, so it does not cancel a confident call
+inputs_not_used_by_model <- c("hematocrite")
+
 ## Training ranges, checked client-side (see inst/app/www/fibomai.js)
 valid_ranges <- lapply(names(input_vars), function(id) {
   rng <- range(data[[input_vars[[id]]]], na.rm = TRUE)

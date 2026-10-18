@@ -91,12 +91,15 @@ mod_prediction_server <- function(id, newdata){
 
     })
 
-    # Sidebar fields left empty (labels), for traceability of the result
-    missing_inputs <- reactive({
+    # Sidebar fields left empty, for traceability of the result
+    missing_ids <- reactive({
       req(newdata())
       empty <- is.na(unlist(newdata()[1, input_vars]))
-      unname(input_labels[names(input_vars)[empty]])
+      names(input_vars)[empty]
     })
+    missing_inputs <- reactive(unname(input_labels[missing_ids()]))
+    # Only the missing values the model actually uses cancel a confident call
+    n_missing_model <- reactive(sum(!missing_ids() %in% inputs_not_used_by_model))
 
     output$density_plot <- renderPlot({
       req(newdata())
@@ -256,7 +259,7 @@ mod_prediction_server <- function(id, newdata){
 
       # Never "confident" when values are missing: the confidence cutoffs were
       # established on complete blood counts
-      confident_pred <-   if(is_confident(pF, n_missing = length(missing_inputs()))){
+      confident_pred <-   if(is_confident(pF, n_missing = n_missing_model())){
 
         paste0("<font color=\"#21bf88\">",
                paste0("Confident prediction"),
@@ -280,10 +283,15 @@ mod_prediction_server <- function(id, newdata){
       sep = "\n")
 
       if (length(missing_inputs()) > 0) {
+        consequence <- if (n_missing_model() > 0) {
+          "The prediction is less reliable and cannot be classified as confident."
+        } else {
+          "This value is not used by the model: the prediction is unchanged."
+        }
         text <- paste0(text,
                        "<font color=\"#E88B1A\"><b>&#9888; Computed with missing values:</b> ",
                        htmltools::htmlEscape(paste(missing_inputs(), collapse = ", ")),
-                       ". The prediction is less reliable and cannot be classified as confident.</font><br><br>")
+                       ". ", consequence, "</font><br><br>")
       }
 
       return(text)

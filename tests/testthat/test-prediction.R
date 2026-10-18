@@ -73,3 +73,10 @@ test_that("a prediction with missing values is never confident", {
   expect_false(is_confident(0.05, n_missing = 1))
   expect_false(is_confident(0.95, n_missing = 3))
 })
+
+test_that("inputs excluded from the confidence rule do not change the prediction", {
+  nd <- data[, model_features]
+  p_full <- predict_fibrosis(nd)$Yes
+  for (id in inputs_not_used_by_model) nd[[input_vars[[id]]]] <- NA_real_
+  expect_equal(predict_fibrosis(nd)$Yes, p_full)
+})
