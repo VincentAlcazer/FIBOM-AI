@@ -13,7 +13,7 @@ app_ui <- function(request) {
     dashboardPage(
 
       header = dashboardHeader(
-        title = "FIBOM-AI v1.1",
+        title = "FIBOM-AI v1.2",
         tags$li(
           class = "dropdown",
           tags$a(href = "#", `data-fib-open` = "fib-info", icon("info-circle"), " Info")
