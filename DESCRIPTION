@@ -1,6 +1,6 @@
 Package: FIBOMAI
 Title: FIBOM-AI
-Version: 0.0.0.9000
+Version: 1.2.0
 Authors@R: 
     person(given = "Vincent", family = "Alcazer", role = c("aut","cre"), email = "vincent.alcazer@chu-lyon.fr")
 Description: Artificial Intelligence–based evaluation of BOne Marrow FIBrosis.
